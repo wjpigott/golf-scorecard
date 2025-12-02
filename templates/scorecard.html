@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scorecard - {{ team.name }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e5128 0%, #2d6a4f 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .team-info {
+            flex: 1;
+        }
+        
+        .team-name {
+            font-size: 2em;
+            color: #1e5128;
+            font-weight: bold;
+        }
+        
+        .team-stats {
+            color: #666;
+            margin-top: 5px;
+            font-size: 1.1em;
+        }
+        
+        .score-summary {
+            text-align: right;
+            font-size: 1.5em;
+        }
+        
+        .total-score {
+            color: #1e5128;
+            font-weight: bold;
+        }
+        
+        .relative-score {
+            font-size: 0.9em;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        
+        .relative-score.under {
+            color: #2d6a4f;
+        }
+        
+        .relative-score.over {
+            color: #c1121f;
+        }
+        
+        .relative-score.even {
+            color: #333;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+        
+        .btn-primary {
+            background: #1e5128;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2d6a4f;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .btn-danger {
+            background: #c1121f;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #a00e1a;
+        }
+        
+        .scorecard {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+        
+        .scorecard-title {
+            text-align: center;
+            color: #1e5128;
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        
+        .holes-grid {
+            display: grid;
+            gap: 15px;
+        }
+        
+        .hole-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s;
+        }
+        
+        .hole-card:hover {
+            border-color: #2d6a4f;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .hole-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .hole-number {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #1e5128;
+        }
+        
+        .hole-par {
+            font-size: 1.1em;
+            color: #666;
+        }
+        
+        .score-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        .score-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+        
+        .score-btn.minus {
+            background: #52b788;
+            color: white;
+        }
+        
+        .score-btn.minus:hover {
+            background: #40916c;
+        }
+        
+        .score-btn.plus {
+            background: #ef233c;
+            color: white;
+        }
+        
+        .score-btn.plus:hover {
+            background: #d00015;
+        }
+        
+        .score-btn.par {
+            background: #1e5128;
+            color: white;
+            width: 60px;
+            height: 40px;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+        
+        .score-btn.par:hover {
+            background: #2d6a4f;
+        }
+        
+        .score-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .score-display {
+            text-align: center;
+            min-width: 100px;
+        }
+        
+        .score-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #1e5128;
+        }
+        
+        .score-relative {
+            font-size: 0.9em;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        
+        .score-relative.under {
+            color: #2d6a4f;
+        }
+        
+        .score-relative.over {
+            color: #c1121f;
+        }
+        
+        .score-relative.even {
+            color: #333;
+        }
+        
+        .no-score {
+            color: #999;
+            font-style: italic;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+            font-size: 1.2em;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #f5c6cb;
+        }
+        
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .score-summary {
+                text-align: center;
+            }
+            
+            .actions {
+                width: 100%;
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+            
+            .team-name {
+                font-size: 1.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="team-info">
+                <div class="team-name">{{ team.name }}</div>
+                <div class="team-stats">Carlinville Country Club</div>
+            </div>
+            <div class="score-summary">
+                <div class="total-score">
+                    Total: <span id="totalScore">-</span>
+                    <span id="relativeScore" class="relative-score">-</span>
+                </div>
+            </div>
+            <div class="actions">
+                <button class="btn btn-secondary" onclick="window.location.href='/'">
+                    ← Back to Teams
+                </button>
+                <button class="btn btn-danger" onclick="unlockAndReturn()">
+                    🔓 Unlock & Return
+                </button>
+            </div>
+        </div>
+        
+        <div id="errorContainer"></div>
+        
+        <div class="scorecard">
+            <div class="scorecard-title">⛳ Score Entry</div>
+            <div id="holesContainer" class="loading">
+                Loading scorecard...
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const teamId = {{ team.id }};
+        let currentScores = {};
+        
+        async function loadScorecard() {
+            try {
+                const response = await fetch(`/api/team/${teamId}`);
+                const data = await response.json();
+                
+                if (!data.locked_by_me) {
+                    showError('This team is not locked by you. Redirecting to team selection...');
+                    setTimeout(() => window.location.href = '/', 2000);
+                    return;
+                }
+                
+                displayScorecard(data);
+            } catch (error) {
+                console.error('Error loading scorecard:', error);
+                showError('Error loading scorecard. Please try again.');
+            }
+        }
+        
+        function displayScorecard(data) {
+            const container = document.getElementById('holesContainer');
+            currentScores = {};
+            
+            // Build scores map
+            data.scores.forEach(score => {
+                currentScores[score.hole_number] = score;
+            });
+            
+            // Update total score display
+            updateTotalDisplay(data.total_score, data.relative_to_par);
+            
+            // Generate hole cards
+            container.className = 'holes-grid';
+            container.innerHTML = data.scores.map(score => {
+                const par = score.par;
+                const strokes = score.strokes;
+                const relScore = score.relative_score;
+                
+                let relClass = 'even';
+                if (relScore && relScore !== 'E') {
+                    relClass = relScore.startsWith('+') ? 'over' : 'under';
+                }
+                
+                const scoreDisplay = strokes !== null ? 
+                    `<div class="score-value">${strokes}</div>
+                     <div class="score-relative ${relClass}">${relScore}</div>` :
+                    `<div class="score-value no-score">-</div>
+                     <div class="score-relative">Not entered</div>`;
+                
+                return `
+                    <div class="hole-card">
+                        <div class="hole-header">
+                            <div class="hole-number">Hole ${score.hole_number}</div>
+                            <div class="hole-par">Par ${par}</div>
+                        </div>
+                        <div class="score-controls">
+                            <button class="score-btn minus" 
+                                    onclick="adjustScore(${score.hole_number}, -1)"
+                                    ${strokes !== null && strokes <= 1 ? 'disabled' : ''}>
+                                −
+                            </button>
+                            <div class="score-display">
+                                ${scoreDisplay}
+                                <button class="score-btn par" 
+                                        onclick="setScoreToPar(${score.hole_number})">
+                                    PAR
+                                </button>
+                            </div>
+                            <button class="score-btn plus" 
+                                    onclick="adjustScore(${score.hole_number}, 1)"
+                                    ${strokes !== null && strokes >= 15 ? 'disabled' : ''}>
+                                +
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function updateTotalDisplay(total, relative) {
+            document.getElementById('totalScore').textContent = total || 0;
+            
+            const relElement = document.getElementById('relativeScore');
+            relElement.textContent = relative || 'E';
+            
+            // Update color class
+            relElement.className = 'relative-score';
+            if (relative && relative !== 'E') {
+                relElement.classList.add(relative.startsWith('+') ? 'over' : 'under');
+            } else {
+                relElement.classList.add('even');
+            }
+        }
+        
+        async function setScoreToPar(holeNumber) {
+            const currentScore = currentScores[holeNumber];
+            const par = currentScore.par;
+            
+            await updateScore(holeNumber, par);
+        }
+        
+        async function adjustScore(holeNumber, delta) {
+            const currentScore = currentScores[holeNumber];
+            const par = currentScore.par;
+            let newStrokes;
+            
+            if (currentScore.strokes === null) {
+                // First entry - default to par, then apply delta
+                newStrokes = par;
+            } else {
+                newStrokes = currentScore.strokes + delta;
+            }
+            
+            // Validate range
+            if (newStrokes < 1 || newStrokes > 15) {
+                return;
+            }
+            
+            await updateScore(holeNumber, newStrokes);
+        }
+        
+        async function updateScore(holeNumber, newStrokes) {
+            
+            try {
+                const response = await fetch(`/api/team/${teamId}/score`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        hole_number: holeNumber,
+                        strokes: newStrokes
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Update local data
+                    currentScores[holeNumber].strokes = newStrokes;
+                    currentScores[holeNumber].relative_score = result.score.relative_score;
+                    
+                    // Update display
+                    updateTotalDisplay(result.total_score, result.relative_to_par);
+                    
+                    // Refresh the hole display
+                    loadScorecard();
+                } else {
+                    showError(result.message || 'Error updating score');
+                }
+            } catch (error) {
+                console.error('Error updating score:', error);
+                showError('Error updating score. Please try again.');
+            }
+        }
+        
+        async function unlockAndReturn() {
+            if (!confirm('Are you sure you want to unlock this team and return to the team selection?')) {
+                return;
+            }
+            
+            try {
+                await fetch(`/api/team/${teamId}/unlock`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                window.location.href = '/';
+            } catch (error) {
+                console.error('Error unlocking team:', error);
+                window.location.href = '/';
+            }
+        }
+        
+        function showError(message) {
+            const container = document.getElementById('errorContainer');
+            container.innerHTML = `<div class="error">${message}</div>`;
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
+        }
+        
+        // Load scorecard on page load
+        loadScorecard();
+        
+        // Warn user if they try to leave without unlocking
+        window.addEventListener('beforeunload', (e) => {
+            e.preventDefault();
+            e.returnValue = 'You have a team locked. Are you sure you want to leave?';
+        });
+    </script>
+</body>
+</html>

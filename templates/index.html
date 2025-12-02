@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Golf Scramble - Carlinville Country Club</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e5128 0%, #2d6a4f 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            color: #1e5128;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 1.2em;
+        }
+        
+        .course-info {
+            background: rgba(255,255,255,0.95);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .course-info div {
+            font-size: 1.1em;
+        }
+        
+        .course-info strong {
+            color: #1e5128;
+        }
+        
+        .teams-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .team-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        
+        .team-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+        
+        .team-card.locked {
+            background: #f0f0f0;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        
+        .team-card.locked:hover {
+            transform: none;
+        }
+        
+        .team-name {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #1e5128;
+            margin-bottom: 10px;
+        }
+        
+        .team-score {
+            font-size: 1.1em;
+            color: #666;
+        }
+        
+        .team-score .relative {
+            font-weight: bold;
+            margin-left: 5px;
+        }
+        
+        .team-score .relative.under {
+            color: #2d6a4f;
+        }
+        
+        .team-score .relative.over {
+            color: #c1121f;
+        }
+        
+        .team-score .relative.even {
+            color: #333;
+        }
+        
+        .lock-icon {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 1.2em;
+        }
+        
+        .unlock-btn {
+            margin-top: 10px;
+            padding: 8px 12px;
+            background: #c1121f;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .unlock-btn:hover {
+            background: #a00e1a;
+            transform: scale(1.05);
+        }
+        
+        .view-btn {
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: #2d6a4f;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: bold;
+            transition: all 0.3s;
+            width: 100%;
+        }
+        
+        .view-btn:hover {
+            background: #1e5128;
+            transform: scale(1.02);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            overflow-y: auto;
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 30px auto;
+            padding: 20px;
+            border-radius: 15px;
+            width: 95%;
+            max-width: 1200px;
+            box-shadow: 0 5px 30px rgba(0,0,0,0.3);
+            overflow-x: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #1e5128;
+        }
+        
+        .modal-title {
+            font-size: 2em;
+            color: #1e5128;
+            font-weight: bold;
+        }
+        
+        .close {
+            color: #aaa;
+            font-size: 2.5em;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+        }
+        
+        .close:hover {
+            color: #000;
+        }
+        
+        .scorecard-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 0.95em;
+            background: white;
+        }
+        
+        .scorecard-table th,
+        .scorecard-table td {
+            border: 2px solid #1e5128;
+            padding: 12px 8px;
+            text-align: center;
+        }
+        
+        .scorecard-table thead th {
+            background: #1e5128;
+            color: white;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+        }
+        
+        .scorecard-table .team-label {
+            background: #2d6a4f;
+            color: white;
+            font-weight: bold;
+            text-align: left;
+            padding-left: 15px;
+        }
+        
+        .scorecard-table .par-row {
+            background: #f8f9fa;
+            font-weight: bold;
+        }
+        
+        .scorecard-table .score-cell {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        
+        .scorecard-table .total-col {
+            background: #e9ecef;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        
+        @media (max-width: 768px) {
+            .scorecard-table {
+                font-size: 0.8em;
+            }
+            
+            .scorecard-table th,
+            .scorecard-table td {
+                padding: 8px 4px;
+            }
+        }
+        
+        .modal-summary {
+            background: #1e5128;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-summary .total {
+            font-size: 2em;
+            font-weight: bold;
+        }
+        
+        .loading {
+            text-align: center;
+            color: white;
+            font-size: 1.5em;
+            padding: 50px;
+        }
+        
+        .filter-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .filter-section label {
+            margin-right: 10px;
+            font-weight: bold;
+            color: #1e5128;
+        }
+        
+        .filter-section input {
+            padding: 8px;
+            border: 2px solid #2d6a4f;
+            border-radius: 5px;
+            font-size: 1em;
+            width: 200px;
+        }
+        
+        .view-toggle {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .toggle-btn {
+            padding: 10px 20px;
+            border: 2px solid #1e5128;
+            background: white;
+            color: #1e5128;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .toggle-btn.active {
+        
+        .toggle-btn.active {
+            background: #1e5128;
+            color: white;
+        }
+        
+        .toggle-btn:hover {
+            background: #2d6a4f;
+            color: white;
+            border-color: #2d6a4f;
+        }
+        
+        .leaderboard {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+        
+        .leaderboard-title {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #1e5128;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .leaderboard-table thead {
+            background: #1e5128;
+            color: white;
+        }
+        
+        .leaderboard-table th {
+            padding: 15px;
+            text-align: left;
+            font-weight: bold;
+        }
+        
+        .leaderboard-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .leaderboard-table tbody tr:hover {
+            background: #f8f9fa;
+            cursor: pointer;
+        }
+        
+        .rank {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #1e5128;
+            width: 60px;
+        }
+        
+        .rank.first {
+            color: #ffd700;
+        }
+        
+        .rank.second {
+            color: #c0c0c0;
+        }
+        
+        .rank.third {
+            color: #cd7f32;
+        }
+        
+        .team-name-col {
+            font-weight: bold;
+            color: #1e5128;
+        }
+        
+        .score-col {
+            text-align: center;
+            font-size: 1.2em;
+        }
+        
+        .relative-col {
+            text-align: center;
+            font-size: 1.3em;
+            font-weight: bold;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .teams-grid {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏌️ Golf Scramble Scorecard</h1>
+            <p>Carlinville Country Club</p>
+            <div class="course-info">
+                <div><strong>Holes:</strong> 18</div>
+                <div><strong>Par:</strong> 72</div>
+                <div><strong>Teams:</strong> 100</div>
+            </div>
+            <div style="margin-top: 15px;">
+                <a href="/admin" style="color: #666; text-decoration: none; font-size: 0.9em;">🔧 Admin Panel</a>
+            </div>
+        </div>
+        
+        <div class="filter-section">
+            <div>
+                <label for="teamSearch">Search Team:</label>
+                <input type="text" id="teamSearch" placeholder="Enter team number or name...">
+            </div>
+            <div class="view-toggle">
+                <button class="toggle-btn active" onclick="switchView('grid', event)">Grid View</button>
+                <button class="toggle-btn" onclick="switchView('leaderboard', event)">Leaderboard</button>
+            </div>
+        </div>
+        
+        <div id="gridView">
+            <div id="teamsContainer" class="loading">
+                Loading teams...
+            </div>
+        </div>
+        
+        <div id="leaderboardView" style="display: none;">
+            <div class="leaderboard">
+                <div class="leaderboard-title">🏆 Live Leaderboard</div>
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Team</th>
+                            <th>Score</th>
+                            <th>vs Par</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboardBody">
+                        <tr><td colspan="5" style="text-align: center;">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Score Review Modal -->
+        <div id="scoreModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title" id="modalTeamName">Team Scores</div>
+                    <span class="close" onclick="closeModal()">&times;</span>
+                </div>
+                <div class="modal-summary" id="modalSummary">
+                    <div class="total">Loading...</div>
+                </div>
+                <div class="scores-grid" id="modalScores">
+                    Loading scores...
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let allTeams = [];
+        let currentView = 'grid';
+        
+        async function loadTeams() {
+            try {
+                const response = await fetch('/api/teams');
+                allTeams = await response.json();
+                
+                if (currentView === 'grid') {
+                    displayTeams(allTeams);
+                } else {
+                    displayLeaderboard(allTeams);
+                }
+            } catch (error) {
+                document.getElementById('teamsContainer').innerHTML = 
+                    '<div style="color: white; text-align: center;">Error loading teams. Please refresh the page.</div>';
+                console.error('Error loading teams:', error);
+            }
+        }
+        
+        function switchView(view, event) {
+            currentView = view;
+            
+            // Update button states
+            document.querySelectorAll('.toggle-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
+            
+            // Toggle views
+            if (view === 'grid') {
+                document.getElementById('gridView').style.display = 'block';
+                document.getElementById('leaderboardView').style.display = 'none';
+                displayTeams(allTeams);
+            } else {
+                document.getElementById('gridView').style.display = 'none';
+                document.getElementById('leaderboardView').style.display = 'block';
+                displayLeaderboard(allTeams);
+            }
+        }
+        
+        function displayLeaderboard(teams) {
+            const tbody = document.getElementById('leaderboardBody');
+            
+            if (teams.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No teams found.</td></tr>';
+                return;
+            }
+            
+            // Sort teams by score (lower is better)
+            const sortedTeams = [...teams].sort((a, b) => {
+                const scoreA = a.total_score || 999;
+                const scoreB = b.total_score || 999;
+                return scoreA - scoreB;
+            });
+            
+            tbody.innerHTML = sortedTeams.map((team, index) => {
+                const rank = index + 1;
+                let rankClass = 'rank';
+                let trophy = '';
+                
+                if (rank === 1) {
+                    rankClass += ' first';
+                    trophy = '🥇';
+                } else if (rank === 2) {
+                    rankClass += ' second';
+                    trophy = '🥈';
+                } else if (rank === 3) {
+                    rankClass += ' third';
+                    trophy = '🥉';
+                }
+                
+                let relativeClass = 'even';
+                const relScore = team.relative_to_par;
+                if (relScore && relScore !== 'E') {
+                    relativeClass = relScore.startsWith('+') ? 'over' : 'under';
+                }
+                
+                const statusIcon = team.is_locked ? '🔒' : '✓';
+                const statusText = team.is_locked ? 'In Progress' : 'Available';
+                
+                return `
+                    <tr onclick="selectTeamFromLeaderboard(${team.id}, ${team.is_locked})">
+                        <td class="${rankClass}">${trophy} ${rank}</td>
+                        <td class="team-name-col">${team.name}</td>
+                        <td class="score-col">${team.total_score || '-'}</td>
+                        <td class="relative-col">
+                            <span class="relative ${relativeClass}">${team.relative_to_par}</span>
+                        </td>
+                        <td>${statusIcon} ${statusText}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        function displayTeams(teams) {
+            const container = document.getElementById('teamsContainer');
+            
+            if (teams.length === 0) {
+                container.innerHTML = '<div style="color: white; text-align: center;">No teams found.</div>';
+                return;
+            }
+            
+            container.className = 'teams-grid';
+            container.innerHTML = teams.map(team => {
+                const isLocked = team.is_locked;
+                const lockedClass = isLocked ? 'locked' : '';
+                const lockIcon = isLocked ? '🔒' : '';
+                
+                let relativeClass = 'even';
+                const relScore = team.relative_to_par;
+                if (relScore && relScore !== 'E') {
+                    relativeClass = relScore.startsWith('+') ? 'over' : 'under';
+                }
+                
+                const unlockButton = isLocked ? 
+                    `<button class="unlock-btn" onclick="event.stopPropagation(); forceUnlock(${team.id})">🔓 Unlock</button>` : '';
+                
+                return `
+                    <div class="team-card ${lockedClass}" onclick="selectTeam(${team.id}, ${isLocked})">
+                        ${lockIcon ? `<span class="lock-icon">${lockIcon}</span>` : ''}
+                        <div class="team-name">${team.name}</div>
+                        <div class="team-score">
+                            Score: ${team.total_score || 0}
+                            <span class="relative ${relativeClass}">${team.relative_to_par}</span>
+                        </div>
+                        ${unlockButton}
+                        <button class="view-btn" onclick="event.stopPropagation(); viewTeamScores(${team.id})">🔍 View Scorecard</button>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        async function selectTeam(teamId, isLocked) {
+            if (isLocked) {
+                alert('This team is currently being edited by another user. Please try again later.');
+                return;
+            }
+            
+            // Try to lock the team before navigating
+            try {
+                const response = await fetch(`/api/team/${teamId}/lock`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    window.location.href = `/scorecard/${teamId}`;
+                } else {
+                    alert(result.message || 'Failed to lock team. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error locking team:', error);
+                alert('Error accessing team. Please try again.');
+            }
+        }
+        
+        function selectTeamFromLeaderboard(teamId, isLocked) {
+            selectTeam(teamId, isLocked);
+        }
+        
+        async function forceUnlock(teamId) {
+            if (!confirm('Force unlock this team? This will allow anyone to access it.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/team/${teamId}/unlock`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ force: true })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Team unlocked successfully!');
+                    loadTeams();
+                } else {
+                    alert(result.message || 'Failed to unlock team');
+                }
+            } catch (error) {
+                console.error('Error unlocking team:', error);
+                alert('Error unlocking team. Please try again.');
+            }
+        }
+        
+        async function viewTeamScores(teamId) {
+            try {
+                const response = await fetch(`/api/team/${teamId}`);
+                const data = await response.json();
+                
+                // Set team name
+                document.getElementById('modalTeamName').textContent = data.name + ' - Score Review';
+                
+                // Set summary
+                const summaryHtml = `
+                    <div class="total">Total: ${data.total_score || 0} (${data.relative_to_par})</div>
+                `;
+                document.getElementById('modalSummary').innerHTML = summaryHtml;
+                
+                // Build golf scorecard table
+                let tableHtml = '<table class="scorecard-table"><thead><tr><th>Hole</th>';
+                
+                // Front 9 holes
+                for (let i = 1; i <= 9; i++) {
+                    tableHtml += `<th>${i}</th>`;
+                }
+                tableHtml += '<th class="total-col">OUT</th>';
+                
+                // Back 9 holes
+                for (let i = 10; i <= 18; i++) {
+                    tableHtml += `<th>${i}</th>`;
+                }
+                tableHtml += '<th class="total-col">IN</th><th class="total-col">TOTAL</th></tr></thead><tbody>';
+                
+                // Par row
+                tableHtml += '<tr class="par-row"><td class="team-label">PAR</td>';
+                let front9Par = 0;
+                let back9Par = 0;
+                for (let i = 0; i < data.scores.length; i++) {
+                    const score = data.scores[i];
+                    tableHtml += `<td>${score.par}</td>`;
+                    if (i < 9) front9Par += score.par;
+                    else back9Par += score.par;
+                    if (i === 8) tableHtml += `<td class="total-col">${front9Par}</td>`;
+                }
+                tableHtml += `<td class="total-col">${back9Par}</td><td class="total-col">${front9Par + back9Par}</td></tr>`;
+                
+                // Score row
+                tableHtml += `<tr><td class="team-label">${data.name}</td>`;
+                let front9Score = 0;
+                let back9Score = 0;
+                for (let i = 0; i < data.scores.length; i++) {
+                    const score = data.scores[i];
+                    let relativeClass = 'even';
+                    const relScore = score.relative_score;
+                    if (relScore && relScore !== 'E') {
+                        relativeClass = relScore.startsWith('+') ? 'over' : 'under';
+                    }
+                    const strokes = score.strokes !== null ? score.strokes : '-';
+                    if (score.strokes !== null) {
+                        if (i < 9) front9Score += score.strokes;
+                        else back9Score += score.strokes;
+                    }
+                    tableHtml += `<td class="score-cell"><span class="relative ${relativeClass}">${strokes}</span></td>`;
+                    if (i === 8) tableHtml += `<td class="total-col">${front9Score || '-'}</td>`;
+                }
+                const totalScore = data.total_score || '-';
+                tableHtml += `<td class="total-col">${back9Score || '-'}</td><td class="total-col">${totalScore}</td></tr>`;
+                
+                tableHtml += '</tbody></table>';
+                
+                document.getElementById('modalScores').innerHTML = tableHtml;
+                
+                // Show modal
+                document.getElementById('scoreModal').style.display = 'block';
+                
+            } catch (error) {
+                console.error('Error loading team scores:', error);
+                alert('Error loading scores. Please try again.');
+            }
+        }
+        
+        function closeModal() {
+            document.getElementById('scoreModal').style.display = 'none';
+        }
+        
+        // Close modal when clicking outside of it
+        window.onclick = function(event) {
+            const modal = document.getElementById('scoreModal');
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+        
+        // Search functionality
+        document.getElementById('teamSearch').addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const filteredTeams = allTeams.filter(team => 
+                team.name.toLowerCase().includes(searchTerm)
+            );
+            if (currentView === 'grid') {
+                displayTeams(filteredTeams);
+            } else {
+                displayLeaderboard(filteredTeams);
+            }
+        });
+        
+        // Load teams on page load
+        loadTeams();
+        
+        // Refresh teams every 30 seconds to update lock status
+        setInterval(loadTeams, 30000);
+    </script>
+</body>
+</html>

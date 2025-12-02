@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Golf Scramble</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e5128 0%, #2d6a4f 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            color: #1e5128;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 1.2em;
+        }
+        
+        .admin-actions {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-danger {
+            background: #c1121f;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #a00e1a;
+            transform: scale(1.05);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: scale(1.05);
+        }
+        
+        .teams-table {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background: #1e5128;
+            color: white;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+        }
+        
+        tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .status-locked {
+            color: #c1121f;
+            font-weight: bold;
+        }
+        
+        .status-available {
+            color: #2d6a4f;
+            font-weight: bold;
+        }
+        
+        .unlock-btn {
+            padding: 8px 16px;
+            background: #c1121f;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .unlock-btn:hover {
+            background: #a00e1a;
+            transform: scale(1.05);
+        }
+        
+        .unlock-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .filter-section {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+        
+        .filter-section label {
+            font-weight: bold;
+            margin-right: 10px;
+            color: #1e5128;
+        }
+        
+        .filter-section select {
+            padding: 8px 15px;
+            border: 2px solid #1e5128;
+            border-radius: 5px;
+            font-size: 1em;
+            background: white;
+            cursor: pointer;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .admin-actions {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 Admin Panel</h1>
+            <p>Manage Teams & Locks</p>
+        </div>
+        
+        <div class="admin-actions">
+            <button class="btn btn-danger" onclick="unlockAll()">🔓 Unlock All Teams</button>
+            <button class="btn btn-secondary" onclick="window.location.href='/'">← Back to Scorecard</button>
+        </div>
+        
+        <div class="filter-section">
+            <label for="filterStatus">Filter:</label>
+            <select id="filterStatus" onchange="filterTeams()">
+                <option value="all">All Teams</option>
+                <option value="locked">Locked Only</option>
+                <option value="available">Available Only</option>
+            </select>
+        </div>
+        
+        <div class="teams-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Team</th>
+                        <th>Score</th>
+                        <th>vs Par</th>
+                        <th>Status</th>
+                        <th>Locked Since</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="teamsTableBody">
+                    <tr><td colspan="6" style="text-align: center;">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script>
+        let allTeams = [];
+        
+        async function loadTeams() {
+            try {
+                const response = await fetch('/api/teams');
+                allTeams = await response.json();
+                displayTeams(allTeams);
+            } catch (error) {
+                console.error('Error loading teams:', error);
+                alert('Error loading teams. Please refresh the page.');
+            }
+        }
+        
+        function displayTeams(teams) {
+            const tbody = document.getElementById('teamsTableBody');
+            
+            if (teams.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No teams found.</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = teams.map(team => {
+                const isLocked = team.is_locked;
+                const statusClass = isLocked ? 'status-locked' : 'status-available';
+                const statusText = isLocked ? '🔒 Locked' : '✓ Available';
+                const lockedTime = isLocked && team.locked_at ? 
+                    new Date(team.locked_at).toLocaleTimeString() : '-';
+                
+                const unlockBtn = isLocked ? 
+                    `<button class="unlock-btn" onclick="unlockTeam(${team.id})">🔓 Unlock</button>` :
+                    `<button class="unlock-btn" disabled>-</button>`;
+                
+                return `
+                    <tr>
+                        <td><strong>${team.name}</strong></td>
+                        <td>${team.total_score || 0}</td>
+                        <td><strong>${team.relative_to_par}</strong></td>
+                        <td class="${statusClass}">${statusText}</td>
+                        <td>${lockedTime}</td>
+                        <td>${unlockBtn}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        function filterTeams() {
+            const filter = document.getElementById('filterStatus').value;
+            let filteredTeams = allTeams;
+            
+            if (filter === 'locked') {
+                filteredTeams = allTeams.filter(team => team.is_locked);
+            } else if (filter === 'available') {
+                filteredTeams = allTeams.filter(team => !team.is_locked);
+            }
+            
+            displayTeams(filteredTeams);
+        }
+        
+        async function unlockTeam(teamId) {
+            if (!confirm('Unlock this team?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/team/${teamId}/unlock`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ force: true })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    loadTeams();
+                } else {
+                    alert(result.message || 'Failed to unlock team');
+                }
+            } catch (error) {
+                console.error('Error unlocking team:', error);
+                alert('Error unlocking team. Please try again.');
+            }
+        }
+        
+        async function unlockAll() {
+            if (!confirm('⚠️ WARNING: Unlock ALL teams? This will release all locks immediately.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/admin/unlock-all', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(`Successfully unlocked ${result.count} team(s)`);
+                    loadTeams();
+                } else {
+                    alert(result.message || 'Failed to unlock teams');
+                }
+            } catch (error) {
+                console.error('Error unlocking all teams:', error);
+                alert('Error unlocking teams. Please try again.');
+            }
+        }
+        
+        // Load teams on page load
+        loadTeams();
+        
+        // Auto-refresh every 10 seconds
+        setInterval(loadTeams, 10000);
+    </script>
+</body>
+</html>
