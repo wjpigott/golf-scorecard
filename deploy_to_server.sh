@@ -2,7 +2,7 @@
 # Automated deployment script to Ubuntu server
 # This script will copy files and deploy the application
 
-SERVER_IP="192.168.88.10"
+SERVER_IP="x,x.x.x"
 SERVER_USER="jpigott"
 SERVER_PATH="/home/jpigott/golf-scorecard"
 LOCAL_PATH="."
