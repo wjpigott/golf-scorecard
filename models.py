@@ -3,18 +3,51 @@ from datetime import datetime
 
 db = SQLAlchemy()
 
-# Course definition for Carlinville Country Club
+# Default course definition for Carlinville Country Club
 COURSE_PARS = [4, 5, 4, 3, 4, 5, 3, 4, 4, 4, 5, 4, 3, 4, 5, 3, 4, 4]
 COURSE_NAME = "Carlinville Country Club"
+
+
+class Scramble(db.Model):
+    __tablename__ = 'scrambles'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    course_name = db.Column(db.String(100), default=COURSE_NAME)
+    is_active = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationship to teams
+    teams = db.relationship('Team', backref='scramble', lazy=True, cascade='all, delete-orphan')
+    
+    def __repr__(self):
+        return f'<Scramble {self.name} - {self.date}>'
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'date': self.date.isoformat() if self.date else None,
+            'course_name': self.course_name,
+            'is_active': self.is_active,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'team_count': len(self.teams)
+        }
+
 
 class Team(db.Model):
     __tablename__ = 'teams'
     
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50), unique=True, nullable=False)
+    scramble_id = db.Column(db.Integer, db.ForeignKey('scrambles.id'), nullable=False)
+    name = db.Column(db.String(50), nullable=False)
     is_locked = db.Column(db.Boolean, default=False)
     locked_at = db.Column(db.DateTime, nullable=True)
     locked_by = db.Column(db.String(100), nullable=True)  # Session ID or identifier
+    
+    # Ensure team names are unique within a scramble
+    __table_args__ = (db.UniqueConstraint('scramble_id', 'name', name='_scramble_team_uc'),)
     
     # Relationship to scores
     scores = db.relationship('Score', backref='team', lazy=True, cascade='all, delete-orphan')

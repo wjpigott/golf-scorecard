@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
-from models import db, Team, Score, AdminSettings, COURSE_PARS, COURSE_NAME
+from models import db, Team, Score, AdminSettings, Scramble, COURSE_PARS, COURSE_NAME
 from datetime import datetime, timedelta
 import os
 import secrets
@@ -41,7 +41,8 @@ def check_and_release_expired_locks():
 @app.route('/')
 def index():
     """Team selection page"""
-    return render_template('index.html')
+    active_scramble = Scramble.query.filter_by(is_active=True).first()
+    return render_template('index.html', active_scramble=active_scramble)
 
 
 @app.route('/scorecard/<int:team_id>')
@@ -53,10 +54,15 @@ def scorecard(team_id):
 
 @app.route('/api/teams', methods=['GET'])
 def get_teams():
-    """Get all teams with their lock status"""
+    """Get all teams with their lock status (from active scramble only)"""
     check_and_release_expired_locks()
     
-    teams = Team.query.order_by(Team.id).all()
+    # Get active scramble
+    active_scramble = Scramble.query.filter_by(is_active=True).first()
+    if not active_scramble:
+        return jsonify([])
+    
+    teams = Team.query.filter_by(scramble_id=active_scramble.id).order_by(Team.id).all()
     teams_data = []
     
     for team in teams:
@@ -284,5 +290,154 @@ def api_admin_unlock_all():
         }), 500
 
 
+@app.route('/api/admin/scrambles', methods=['GET'])
+def api_admin_get_scrambles():
+    """Get all scrambles"""
+    if not session.get('admin_authenticated'):
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+    
+    scrambles = Scramble.query.order_by(Scramble.date.desc()).all()
+    return jsonify({
+        'success': True,
+        'scrambles': [s.to_dict() for s in scrambles]
+    })
+
+
+@app.route('/api/admin/scrambles', methods=['POST'])
+def api_admin_create_scramble():
+    """Create a new scramble"""
+    if not session.get('admin_authenticated'):
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+    
+    try:
+        data = request.get_json()
+        name = data.get('name', '').strip()
+        date_str = data.get('date', '').strip()
+        
+        if not name or not date_str:
+            return jsonify({'success': False, 'message': 'Name and date are required'}), 400
+        
+        # Parse date
+        scramble_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        
+        # Create new scramble
+        scramble = Scramble(
+            name=name,
+            date=scramble_date,
+            course_name=COURSE_NAME,
+            is_active=False
+        )
+        
+        db.session.add(scramble)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Scramble "{name}" created successfully',
+            'scramble': scramble.to_dict()
+        })
+    except ValueError:
+        return jsonify({'success': False, 'message': 'Invalid date format'}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@app.route('/api/admin/scrambles/<int:scramble_id>/activate', methods=['POST'])
+def api_admin_activate_scramble(scramble_id):
+    """Set a scramble as active"""
+    if not session.get('admin_authenticated'):
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+    
+    try:
+        # Deactivate all scrambles
+        Scramble.query.update({Scramble.is_active: False})
+        
+        # Activate the selected scramble
+        scramble = Scramble.query.get_or_404(scramble_id)
+        scramble.is_active = True
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Scramble "{scramble.name}" is now active',
+            'scramble': scramble.to_dict()
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@app.route('/api/admin/scrambles/<int:scramble_id>/teams', methods=['POST'])
+def api_admin_add_teams_to_scramble(scramble_id):
+    """Add teams to a scramble"""
+    if not session.get('admin_authenticated'):
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+    
+    try:
+        scramble = Scramble.query.get_or_404(scramble_id)
+        data = request.get_json()
+        team_names = data.get('teams', [])
+        
+        if not team_names:
+            return jsonify({'success': False, 'message': 'No teams provided'}), 400
+        
+        created_teams = []
+        for team_name in team_names:
+            team_name = team_name.strip()
+            if not team_name:
+                continue
+            
+            # Check if team already exists for this scramble
+            existing = Team.query.filter_by(scramble_id=scramble_id, name=team_name).first()
+            if existing:
+                continue
+            
+            # Create team
+            team = Team(scramble_id=scramble_id, name=team_name)
+            db.session.add(team)
+            db.session.flush()  # Get team ID
+            
+            # Create empty scores for all 18 holes
+            for hole in range(1, 19):
+                score = Score(team_id=team.id, hole_number=hole)
+                db.session.add(score)
+            
+            created_teams.append(team_name)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Created {len(created_teams)} team(s)',
+            'teams': created_teams
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
 if __name__ == '__main__':
+    # Create database tables if they don't exist
+    with app.app_context():
+        db.create_all()
+        # Initialize admin password if not exists
+        admin_settings = AdminSettings.query.first()
+        if not admin_settings:
+            admin_password = os.environ.get('ADMIN_PASSWORD', 'golf')
+            admin_settings = AdminSettings(password=admin_password)
+            db.session.add(admin_settings)
+            db.session.commit()
     app.run(debug=True, host='0.0.0.0', port=5000)
+else:
+    # When running with gunicorn, create tables on import
+    with app.app_context():
+        db.create_all()
+        # Initialize admin password if not exists
+        admin_settings = AdminSettings.query.first()
+        if not admin_settings:
+            admin_password = os.environ.get('ADMIN_PASSWORD', 'golf')
+            admin_settings = AdminSettings(password=admin_password)
+            db.session.add(admin_settings)
+            db.session.commit()

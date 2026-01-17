@@ -444,11 +444,17 @@
     <div class="container">
         <div class="header">
             <h1>🏌️ Golf Scramble Scorecard</h1>
-            <p>Carlinville Country Club</p>
+            {% if active_scramble %}
+                <p style="color: #1e5128; font-weight: bold; font-size: 1.4em;">{{ active_scramble.name }}</p>
+                <p>{{ active_scramble.course_name }} | {{ active_scramble.date.strftime('%B %d, %Y') }}</p>
+            {% else %}
+                <p>Carlinville Country Club</p>
+                <p style="color: #c1121f; font-size: 0.9em;">⚠️ No active scramble. Please contact admin.</p>
+            {% endif %}
             <div class="course-info">
                 <div><strong>Holes:</strong> 18</div>
                 <div><strong>Par:</strong> 72</div>
-                <div><strong>Teams:</strong> 100</div>
+                <div><strong>Teams:</strong> <span id="teamCount">-</span></div>
             </div>
             <div style="margin-top: 15px;">
                 <a href="/admin" style="color: #666; text-decoration: none; font-size: 0.9em;">🔧 Admin Panel</a>
@@ -517,6 +523,12 @@
             try {
                 const response = await fetch('/api/teams');
                 allTeams = await response.json();
+                
+                // Update team count
+                const teamCountEl = document.getElementById('teamCount');
+                if (teamCountEl) {
+                    teamCountEl.textContent = allTeams.length;
+                }
                 
                 if (currentView === 'grid') {
                     displayTeams(allTeams);

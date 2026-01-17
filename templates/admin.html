@@ -191,12 +191,33 @@
     <div class="container">
         <div class="header">
             <h1>🔧 Admin Panel</h1>
-            <p>Manage Teams & Locks</p>
+            <p>Manage Scrambles, Teams & Locks</p>
         </div>
         
-        <div class="admin-actions">
+        <!-- Scramble Management Section -->
+        <div class="teams-table">
+            <h2 style="color: #1e5128; margin-bottom: 20px;">🏌️ Scramble Management</h2>
+            
+            <!-- Create New Scramble Form -->
+            <div style="background: #f0f8ff; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                <h3 style="margin-bottom: 15px;">Create New Scramble</h3>
+                <form onsubmit="createScramble(event)" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <input type="text" id="scrambleName" placeholder="Scramble Name (e.g., Spring Championship 2026)" 
+                           required style="flex: 2; min-width: 250px; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                    <input type="date" id="scrambleDate" required 
+                           style="flex: 1; min-width: 150px; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                    <button type="submit" class="btn" style="background: #28a745; color: white;">➕ Create Scramble</button>
+                </form>
+            </div>
+            
+            <!-- Existing Scrambles List -->
+            <div id="scramblesList"></div>
+        </div>
+        
+        <div class="admin-actions" style="margin-top: 20px;">
             <button class="btn btn-danger" onclick="unlockAll()">🔓 Unlock All Teams</button>
             <button class="btn btn-secondary" onclick="window.location.href='/'">← Back to Scorecard</button>
+            <button class="btn btn-secondary" onclick="window.location.href='/admin/logout'">🚪 Logout</button>
         </div>
         
         <div class="filter-section">
@@ -340,11 +361,162 @@
             }
         }
         
-        // Load teams on page load
+        // Scramble Management Functions
+        async function loadScrambles() {
+            try {
+                const response = await fetch('/api/admin/scrambles');
+                const result = await response.json();
+                
+                if (result.success) {
+                    displayScrambles(result.scrambles);
+                }
+            } catch (error) {
+                console.error('Error loading scrambles:', error);
+            }
+        }
+        
+        function displayScrambles(scrambles) {
+            const container = document.getElementById('scramblesList');
+            
+            if (scrambles.length === 0) {
+                container.innerHTML = '<p style="color: #666; text-align: center; padding: 20px;">No scrambles yet. Create one above!</p>';
+                return;
+            }
+            
+            container.innerHTML = scrambles.map(scramble => `
+                <div style="background: ${scramble.is_active ? '#e8f5e9' : '#f5f5f5'}; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid ${scramble.is_active ? '#28a745' : '#ddd'};">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                        <div style="flex: 1;">
+                            <h3 style="margin-bottom: 5px;">${scramble.name} ${scramble.is_active ? '✓' : ''}</h3>
+                            <p style="color: #666; margin-bottom: 5px;">📅 ${scramble.date} | 📍 ${scramble.course_name}</p>
+                            <p style="color: #666;">👥 ${scramble.team_count} team(s)</p>
+                        </div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            ${!scramble.is_active ? `<button class="btn" style="background: #28a745; color: white; padding: 8px 16px;" onclick="activateScramble(${scramble.id}, '${scramble.name}')">Activate</button>` : '<span style="color: #28a745; font-weight: bold;">ACTIVE</span>'}
+                            <button class="btn" style="background: #007bff; color: white; padding: 8px 16px;" onclick="showAddTeamsDialog(${scramble.id}, '${scramble.name}')">Add Teams</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        async function createScramble(event) {
+            event.preventDefault();
+            
+            const name = document.getElementById('scrambleName').value.trim();
+            const date = document.getElementById('scrambleDate').value;
+            
+            if (!name || !date) {
+                alert('Please enter both name and date');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/admin/scrambles', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, date })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(`Scramble "${name}" created successfully!`);
+                    document.getElementById('scrambleName').value = '';
+                    document.getElementById('scrambleDate').value = '';
+                    loadScrambles();
+                } else {
+                    alert(result.message || 'Failed to create scramble');
+                }
+            } catch (error) {
+                console.error('Error creating scramble:', error);
+                alert('Error creating scramble. Please try again.');
+            }
+        }
+        
+        async function activateScramble(scrambleId, scrambleName) {
+            if (!confirm(`Set "${scrambleName}" as the active scramble?\n\nThis will be displayed on the main page.`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/admin/scrambles/${scrambleId}/activate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(result.message);
+                    loadScrambles();
+                    loadTeams();
+                } else {
+                    alert(result.message || 'Failed to activate scramble');
+                }
+            } catch (error) {
+                console.error('Error activating scramble:', error);
+                alert('Error activating scramble. Please try again.');
+            }
+        }
+        
+        function showAddTeamsDialog(scrambleId, scrambleName) {
+            const teamNames = prompt(
+                `Add teams to "${scrambleName}"\n\n` +
+                `Enter team names (one per line):\n` +
+                `Example:\n` +
+                `Team 1\n` +
+                `Team 2\n` +
+                `Team 3`
+            );
+            
+            if (teamNames) {
+                const teams = teamNames.split('\n')
+                    .map(t => t.trim())
+                    .filter(t => t.length > 0);
+                
+                if (teams.length > 0) {
+                    addTeamsToScramble(scrambleId, teams);
+                }
+            }
+        }
+        
+        async function addTeamsToScramble(scrambleId, teams) {
+            try {
+                const response = await fetch(`/api/admin/scrambles/${scrambleId}/teams`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ teams })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(result.message);
+                    loadScrambles();
+                    loadTeams();
+                } else {
+                    alert(result.message || 'Failed to add teams');
+                }
+            } catch (error) {
+                console.error('Error adding teams:', error);
+                alert('Error adding teams. Please try again.');
+            }
+        }
+        
+        // Load data on page load
+        loadScrambles();
         loadTeams();
         
         // Auto-refresh every 10 seconds
         setInterval(loadTeams, 10000);
+        setInterval(loadScrambles, 30000);
     </script>
 </body>
 </html>
