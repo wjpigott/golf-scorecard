@@ -22,7 +22,7 @@ if %errorlevel% neq 0 (
 
 set SERVER=192.168.88.10
 set USER=jpigott
-set PASSWORD=P1gotth0use
+set PASSWORD=password
 set REMOTE_PATH=/home/jpigott/golf-scorecard
 
 echo Step 1: Creating directory on server...

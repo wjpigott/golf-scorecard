@@ -2,7 +2,7 @@
 # Automated deployment script to Ubuntu server
 # This script will copy files and deploy the application
 
-SERVER_IP="192.168.88.10"
+SERVER_IP="x,x.x.x"
 SERVER_USER="jpigott"
 SERVER_PATH="/home/jpigott/golf-scorecard"
 LOCAL_PATH="."
@@ -21,7 +21,7 @@ if ! command -v sshpass &> /dev/null; then
     USE_SSHPASS=false
 else
     USE_SSHPASS=true
-    SERVER_PASSWORD="P1gotth0use"
+    SERVER_PASSWORD="yourpassword"
 fi
 
 # Function to run SSH commands

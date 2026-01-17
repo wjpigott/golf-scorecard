@@ -2,8 +2,8 @@
 # Simple server setup and start script
 
 echo "Installing dependencies..."
-echo "P1gotth0use" | sudo -S apt update
-echo "P1gotth0use" | sudo -S apt install -y python3-pip python3-flask python3-flask-sqlalchemy
+echo "yourpassword" | sudo -S apt update
+echo "yourpassword" | sudo -S apt install -y python3-pip python3-flask python3-flask-sqlalchemy
 
 cd /home/jpigott/golf-scorecard
 

@@ -3,7 +3,7 @@
 
 $ServerIP = "192.168.88.10"
 $Username = "jpigott"
-$Password = "P1gotth0use"
+$Password = "yourpassword"
 $RemotePath = "/home/jpigott/golf-scorecard"
 $LocalPath = "."
 
