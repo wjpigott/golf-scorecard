@@ -21,7 +21,7 @@ if ! command -v sshpass &> /dev/null; then
     USE_SSHPASS=false
 else
     USE_SSHPASS=true
-    SERVER_PASSWORD="P1gotth0use"
+    SERVER_PASSWORD="yourpassword"
 fi
 
 # Function to run SSH commands
