@@ -278,13 +278,19 @@
         }
         
         @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
             .header {
                 flex-direction: column;
                 text-align: center;
+                padding: 15px;
             }
             
             .score-summary {
                 text-align: center;
+                font-size: 1.3em;
             }
             
             .actions {
@@ -294,10 +300,62 @@
             
             .btn {
                 width: 100%;
+                padding: 15px 20px;
+                font-size: 1.1em;
+                touch-action: manipulation;
             }
             
             .team-name {
                 font-size: 1.5em;
+            }
+            
+            .team-stats {
+                font-size: 1em;
+            }
+            
+            .scorecard {
+                padding: 15px;
+            }
+            
+            .scorecard-title {
+                font-size: 1.3em;
+            }
+            
+            .hole-card {
+                padding: 15px;
+            }
+            
+            .hole-number {
+                font-size: 1.5em;
+            }
+            
+            .hole-par {
+                font-size: 1.2em;
+            }
+            
+            .score-btn {
+                width: 60px;
+                height: 60px;
+                font-size: 1.8em;
+                touch-action: manipulation;
+            }
+            
+            .score-btn.par {
+                width: 80px;
+                height: 50px;
+                font-size: 1.1em;
+            }
+            
+            .score-value {
+                font-size: 2.5em;
+            }
+            
+            .score-display {
+                min-width: 120px;
+            }
+            
+            .score-controls {
+                gap: 20px;
             }
         }
     </style>
