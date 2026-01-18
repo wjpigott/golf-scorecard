@@ -254,7 +254,15 @@
         async function loadTeams() {
             try {
                 const response = await fetch('/api/teams');
-                allTeams = await response.json();
+                const data = await response.json();
+                
+                // Handle both old and new API format
+                if (data.teams) {
+                    allTeams = data.teams;
+                } else {
+                    allTeams = data;
+                }
+                
                 displayTeams(allTeams);
             } catch (error) {
                 console.error('Error loading teams:', error);
