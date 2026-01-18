@@ -481,6 +481,7 @@
         <div id="leaderboardView" style="display: none;">
             <div class="leaderboard">
                 <div class="leaderboard-title">🏆 Live Leaderboard</div>
+                <div id="leaderboardScrambleName" style="text-align: center; color: #666; font-size: 1.1em; margin-bottom: 15px;"></div>
                 <table class="leaderboard-table">
                     <thead>
                         <tr>
@@ -517,12 +518,22 @@
     
     <script>
         let allTeams = [];
+        let currentScramble = null;
         let currentView = 'grid';
         
         async function loadTeams() {
             try {
                 const response = await fetch('/api/teams');
-                allTeams = await response.json();
+                const data = await response.json();
+                
+                // Handle both old and new API format
+                if (data.teams) {
+                    allTeams = data.teams;
+                    currentScramble = data.scramble;
+                } else {
+                    allTeams = data;
+                    currentScramble = null;
+                }
                 
                 // Update team count
                 const teamCountEl = document.getElementById('teamCount');
@@ -567,6 +578,12 @@
         
         function displayLeaderboard(teams) {
             const tbody = document.getElementById('leaderboardBody');
+            const scrambleNameEl = document.getElementById('leaderboardScrambleName');
+            
+            // Display scramble name
+            if (scrambleNameEl && currentScramble) {
+                scrambleNameEl.textContent = currentScramble.name;
+            }
             
             if (teams.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No teams found.</td></tr>';
@@ -642,10 +659,13 @@
                 const unlockButton = isLocked ? 
                     `<button class="unlock-btn" onclick="event.stopPropagation(); forceUnlock(${team.id})">🔓 Unlock</button>` : '';
                 
+                const scrambleInfo = currentScramble ? `<div style="font-size: 0.7em; color: #888; margin-top: 5px;">${currentScramble.name}</div>` : '';
+                
                 return `
                     <div class="team-card ${lockedClass}" onclick="selectTeam(${team.id}, ${isLocked})">
                         ${lockIcon ? `<span class="lock-icon">${lockIcon}</span>` : ''}
                         <div class="team-name">${team.name}</div>
+                        ${scrambleInfo}
                         <div class="team-score">
                             Score: ${team.total_score || 0}
                             <span class="relative ${relativeClass}">${team.relative_to_par}</span>

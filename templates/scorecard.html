@@ -307,7 +307,12 @@
         <div class="header">
             <div class="team-info">
                 <div class="team-name">{{ team.name }}</div>
-                <div class="team-stats">Carlinville Country Club</div>
+                {% if scramble %}
+                    <div class="team-stats">{{ scramble.name }} - {{ scramble.date.strftime('%B %d, %Y') }}</div>
+                    <div class="team-stats" style="font-size: 0.9em; color: #888;">{{ scramble.course_name }}</div>
+                {% else %}
+                    <div class="team-stats">Carlinville Country Club</div>
+                {% endif %}
             </div>
             <div class="score-summary">
                 <div class="total-score">

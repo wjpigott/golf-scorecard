@@ -49,7 +49,8 @@ def index():
 def scorecard(team_id):
     """Scorecard entry page for a specific team"""
     team = Team.query.get_or_404(team_id)
-    return render_template('scorecard.html', team=team)
+    scramble = team.scramble
+    return render_template('scorecard.html', team=team, scramble=scramble)
 
 
 @app.route('/api/teams', methods=['GET'])
@@ -60,7 +61,7 @@ def get_teams():
     # Get active scramble
     active_scramble = Scramble.query.filter_by(is_active=True).first()
     if not active_scramble:
-        return jsonify([])
+        return jsonify({'scramble': None, 'teams': []})
     
     teams = Team.query.filter_by(scramble_id=active_scramble.id).order_by(Team.id).all()
     teams_data = []
@@ -78,7 +79,13 @@ def get_teams():
         
         teams_data.append(team_dict)
     
-    return jsonify(teams_data)
+    return jsonify({
+        'scramble': {
+            'name': active_scramble.name,
+            'date': active_scramble.date.isoformat()
+        },
+        'teams': teams_data
+    })
 
 
 @app.route('/api/team/<int:team_id>', methods=['GET'])
